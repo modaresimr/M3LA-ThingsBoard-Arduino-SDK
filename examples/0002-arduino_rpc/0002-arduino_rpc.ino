@@ -30,7 +30,7 @@ void setup() {
 // Processes function for RPC call "example_set_temperature"
 // RPC_Data is a JSON variant, that can be queried using operator[]
 // See https://arduinojson.org/v5/api/jsonvariant/subscript/ for more details
-RPC_Response processTemperatureChange(const RPC_Data &data)
+RPC_Response set_temperature(const RPC_Data &data)
 {
   Serial.println("Received the set temperature RPC method");
 
@@ -48,7 +48,7 @@ RPC_Response processTemperatureChange(const RPC_Data &data)
 // Processes function for RPC call "example_set_switch"
 // RPC_Data is a JSON variant, that can be queried using operator[]
 // See https://arduinojson.org/v5/api/jsonvariant/subscript/ for more details
-RPC_Response processSwitchChange(const RPC_Data &data)
+RPC_Response set_switch(const RPC_Data &data)
 {
   Serial.println("Received the set switch method");
 
@@ -64,8 +64,8 @@ RPC_Response processSwitchChange(const RPC_Data &data)
 }
 
 std::vector<RPC_Callback> callbacks = {
-  { "example_set_temperature",    processTemperatureChange },
-  { "example_set_switch",         processSwitchChange }
+  { "set_temperature",    set_temperature },
+  { "set_switch",         set_switch }
 };
 
 void loop() {
