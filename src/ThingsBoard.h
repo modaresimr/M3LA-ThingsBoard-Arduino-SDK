@@ -236,7 +236,10 @@ public:
     m_client.setCallback(ThingsBoardSized::on_message);
 
     return true;
-}
+  }
+  bool setMQTTCallback(MQTT_CALLBACK_SIGNATURE){
+   this->callback=callback;
+  }
 
   inline bool RPC_Unsubscribe() {
     ThingsBoardSized::m_subscribedInstance = NULL;
@@ -248,6 +251,7 @@ public:
 	}
 
 private:
+  MQTT_CALLBACK_SIGNATURE;
   // Sends single key-value in a generic way.
   template<typename T>
   bool sendKeyval(const char *key, T value, bool telemetry = true) {
@@ -274,13 +278,21 @@ private:
 
   // Processes RPC message
   void process_message(char* topic, uint8_t* payload, unsigned int length) {
+    if (!process_rpc(topic,payload,length)){
+      Logger::log("It is not a RPC, handel it as simple mqtt message");
+      if (this->callback != NULL){
+          this->callback(topic,payload,length);
+      }
+    }
+  }
+  bool process_rpc(char* topic, uint8_t* payload, unsigned int length) {
     RPC_Response r;
     {
       StaticJsonDocument<JSON_OBJECT_SIZE(MaxFieldsAmt)> jsonBuffer;
       DeserializationError error = deserializeJson(jsonBuffer, payload, length);
       if (error) {
         Logger::log("unable to de-serialize RPC");
-        return;
+        return false;
       }
       const JsonObject &data = jsonBuffer.template as<JsonObject>();
 
@@ -291,7 +303,7 @@ private:
         Logger::log(methodName);
       } else {
         Logger::log("RPC method is NULL");
-        return;
+        return false;
       }
 
       for (const auto& m_rpcCallback : m_rpcCallbacks) {
@@ -317,7 +329,7 @@ private:
         Logger::log("response:");
         Logger::log(r.m_value.str);
         m_client.publish(responseTopic.c_str(), r.m_value.str);
-        return;
+        return true;
       }
       // Fill in response
       char payload[PayloadSize] = {0};
@@ -326,12 +338,12 @@ private:
 
       if (r.serializeKeyval(resp_obj) == false) {
         Logger::log("unable to serialize data");
-        return;
+        return false;
       }
 
       if (measureJson(respBuffer) > PayloadSize - 1) {
         Logger::log("too small buffer for JSON data");
-        return;
+        return false;
       }
       serializeJson(resp_obj, payload, sizeof(payload));
 
@@ -340,6 +352,7 @@ private:
       Logger::log("response:");
       Logger::log(payload);
       m_client.publish(responseTopic.c_str(), payload);
+      return true;
     }
   }
 
@@ -570,6 +583,8 @@ private:
   int m_port;
   const char *m_token;
 };
+
+
 
 using ThingsBoardHttp = ThingsBoardHttpSized<>;
 
