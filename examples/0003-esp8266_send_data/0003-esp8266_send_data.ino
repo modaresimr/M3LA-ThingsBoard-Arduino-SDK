@@ -1,7 +1,6 @@
 #include "ThingsBoard.h"
 
-#include <ESP8266WiFi.h>
-
+#include <WiFi.h>
 
 #define WIFI_AP             "YOUR_WIFI_AP"
 #define WIFI_PASSWORD       "YOUR_WIFI_PASSWORD"
@@ -53,8 +52,8 @@ void loop() {
   // See https://thingsboard.io/docs/reference/mqtt-api/#telemetry-upload-api
   // for more details
 
-  tb.sendTelemetryInt("temperature", 22);
-  tb.sendTelemetryFloat("humidity", 42.5);
+  tb.sendTelemetry("temperature", 22);
+  tb.sendTelemetry("humidity", 42.5);
 
   tb.loop();
 }
