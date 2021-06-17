@@ -46,6 +46,19 @@ public:
   inline Telemetry(const char *key, T val)
   :m_type(TYPE_INT), m_key(key), m_value()   { m_value.integer = val; }
 
+  // Constructs telemetry record from JSON value.
+  inline Telemetry(const char *val)
+  :m_type(TYPE_JSON), m_key(NULL), m_value() { m_value.str = val;}
+
+  // Constructs telemetry record from JSON value.
+  inline Telemetry(const JsonDocument val)
+  :m_type(TYPE_JSON), m_key(NULL), m_value() { 
+    String json_str;
+    serializeJson(doc, json_str);
+    m_value.str = json_str;
+  }
+
+
   // Constructs telemetry record from boolean value.
   inline Telemetry(const char *key, bool val)
   :m_type(TYPE_BOOL), m_key(key), m_value()  { m_value.boolean = val; }
@@ -74,6 +87,7 @@ private:
     TYPE_INT,
     TYPE_REAL,
     TYPE_STR,
+    TYPE_JSON,
   };
 
   dataType     m_type;  // Data type flag
@@ -297,6 +311,14 @@ private:
       }
     }
     {
+      if (r.m_type == r.TYPE_JSON) {
+        String responseTopic = String(topic);
+        responseTopic.replace("request", "response");
+        Logger::log("response:");
+        Logger::log(r.m_value.str);
+        m_client.publish(responseTopic.c_str(), r.m_value.str);
+        return;
+      }
       // Fill in response
       char payload[PayloadSize] = {0};
       StaticJsonDocument<JSON_OBJECT_SIZE(1)> respBuffer;
