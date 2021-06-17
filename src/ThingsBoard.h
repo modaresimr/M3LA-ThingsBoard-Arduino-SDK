@@ -54,8 +54,8 @@ public:
   inline Telemetry(const JsonDocument val)
   :m_type(TYPE_JSON), m_key(NULL), m_value() { 
     String json_str;
-    serializeJson(doc, json_str);
-    m_value.str = json_str;
+    serializeJson(val, json_str);
+    m_value.str = json_str.c_str();
   }
 
 
