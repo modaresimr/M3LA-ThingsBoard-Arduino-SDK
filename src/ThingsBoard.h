@@ -14,6 +14,7 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "ArduinoJson/Polyfills/type_traits.hpp"
+#include <vector>
 
 #define Default_Payload 64
 #define Default_Fields_Amt 8
@@ -227,10 +228,7 @@ public:
   // Server-side RPC API
 
   // Subscribes multiple RPC callbacks with given size
-  bool RPC_Subscribe(const RPC_Callback *callbacks, size_t callbacks_size) {
-    if (callbacks_size > sizeof(m_rpcCallbacks) / sizeof(*m_rpcCallbacks)) {
-      return false;
-    }
+  bool RPC_Subscribe(const std::vector<RPC_Callback>& callbacks) {
     if (ThingsBoardSized::m_subscribedInstance) {
       return false;
     }
@@ -240,9 +238,7 @@ public:
     }
 
     ThingsBoardSized::m_subscribedInstance = this;
-    for (size_t i = 0; i < callbacks_size; ++i) {
-      m_rpcCallbacks[i] = callbacks[i];
-    }
+    m_rpcCallbacks.assign(callbacks.begin(), callbacks.end());
 
     m_client.setCallback(ThingsBoardSized::on_message);
 
@@ -253,6 +249,10 @@ public:
     ThingsBoardSized::m_subscribedInstance = NULL;
     return m_client.unsubscribe("v1/devices/me/rpc/request/+");
   }
+
+  inline bool RPC_Subscribed() {
+		return m_subscribedInstance != NULL;
+	}
 
 private:
   // Sends single key-value in a generic way.
@@ -301,19 +301,18 @@ private:
         return;
       }
 
-      for (size_t i = 0; i < sizeof(m_rpcCallbacks) / sizeof(*m_rpcCallbacks); ++i) {
-        if (m_rpcCallbacks[i].m_cb && !strcmp(m_rpcCallbacks[i].m_name, methodName)) {
-
+      for (const auto& m_rpcCallback : m_rpcCallbacks) {
+        if (m_rpcCallback.m_cb && !strcmp(m_rpcCallback.m_name, methodName)) {
           Logger::log("calling RPC:");
           Logger::log(methodName);
 
           // Do not inform client, if parameter field is missing for some reason
-          if (!data.containsKey("params")) {
+          if (!data.containsKey("params"))
             Logger::log("no parameters passed with RPC, passing null JSON");
-          }
-          // Getting non-existing field from JSON should automatically
-          // set JSONVariant to null
-          r = m_rpcCallbacks[i].m_cb(data["params"]);
+
+          // Getting non-existing field from JSON should automatically set JSONVariant to nullptr
+                    
+          r = m_rpcCallback.m_cb(data["params"]);
           break;
         }
       }
@@ -371,7 +370,7 @@ private:
   }
 
   PubSubClient m_client;              // PubSub MQTT client instance.
-  RPC_Callback m_rpcCallbacks[8];     // RPC callbacks array
+  std::vector<RPC_Callback> m_rpcCallbacks;   // RPC callbacks array	
 
   // PubSub client cannot call a method when message arrives on subscribed topic.
   // Only free-standing function is allowed.
@@ -444,11 +443,9 @@ public:
       return  false;
     }
 
-    if (!m_client.connected()) {
-      if (!m_client.connect(m_host, m_port)) {
+		if (!m_client.connected() && !m_client.connect(m_host, m_port)) {
         Logger::log("connect to server failed");
         return false;
-      }
     }
 
     bool rc = true;
@@ -497,11 +494,9 @@ public:
       return  false;
     }
 
-    if (!m_client.connected()) {
-      if (!m_client.connect(m_host, m_port)) {
+ 		if (!m_client.connected() && !m_client.connect(m_host, m_port)) {
         Logger::log("connect to server failed");
         return false;
-      }
     }
 
     bool rc = true;
