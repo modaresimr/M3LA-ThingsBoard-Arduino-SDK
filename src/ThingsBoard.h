@@ -240,6 +240,10 @@ public:
   bool setMQTTCallback(MQTT_CALLBACK_SIGNATURE){
    this->callback=callback;
   }
+  //get mqtt instance
+  PubSubClient mqtt() {
+    return m_client;
+  }
 
   inline bool RPC_Unsubscribe() {
     ThingsBoardSized::m_subscribedInstance = NULL;
